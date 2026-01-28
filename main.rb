@@ -3,40 +3,54 @@ def r
 end
 
 class Game
-  def initialize
-    @board=Board.new
-    @setter = Setter.new()
-    @guesser = Guesser.new()
+  def initialize(rounds: 8)
+    @board       = Board.new
+    @setter      = Setter.new
+    @guesser     = Guesser.new
+    @max_rounds  = rounds
+    @round_count = 0
   end
 
-
-  def play_match(rounds = 8)
-    # Ask the setter to create the secret combination
+  def play_match
     secret_code = @setter.set_combination
     @board.update_combination(secret_code)
 
-    rounds.times do
-      play_round
-      break if match_over?
+    play_round until match_over?
+
+    conclude_match
+  end
+
+  private
+
+  def play_round
+    @board.display_board
+
+    guess = @guesser.take_guess
+    @board.submit_guess(guess) # record the guess
+    result = @board.check_guess(guess) # check if it's a win
+
+    @round_count += 1
+
+    if result == :win
+      @winner = :guesser
+    elsif @round_count < @max_rounds
+      puts "Round #{@round_count} complete. Continuing..."
     end
   end
 
-  def round
-  @board.display_board
-  move = @guesser.take_a_guess
-  new_board = @board.update_board(move)
+  def match_over?
+    @winner == :guesser || @round_count >= @max_rounds
+  end
 
-  result = @board.check_board
-  
+  def conclude_match
+    @board.display_board
 
-
-  if result == win
-    puts "Guesser Wins!"
-  elsif round_count < rounds
-    puts "{round_count} concluded. Continuing to next round"
-  else 
-    puts "Setter Wins!"
-  end 
+    if @winner == :guesser
+      puts 'Guesser wins!'
+    else
+      puts 'Setter wins!'
+    end
+  end
 end
 
 class Board
