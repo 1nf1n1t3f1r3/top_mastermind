@@ -25,7 +25,11 @@ class Game
     puts 'Who should guess the code? (1) Human (2) AI'
     choice = gets.chomp
 
-    choice == '2' ? AIGuesser.new : HumanGuesser.new
+    if choice == '2'
+      AIGuesser.new(@board.slots) # <-- pass slots here
+    else
+      HumanGuesser.new
+    end
   end
 
   def play_match
@@ -44,6 +48,13 @@ class Game
       guess = @guesser.guess_combination(@board.slots) # Change to allow AI
       @board.update_guess(guess)
       won = @board.evaluate_guess(guess)
+
+      # AI Do Stuff:
+      if @guesser.is_a?(AIGuesser)
+        exact, partial = @board.feedback_for_guess(@round_count - 1)
+        @guesser.receive_feedback(exact, partial)
+      end
+
       @board.display_board
 
       if won
@@ -98,6 +109,11 @@ class Board
 
   def display_code
     puts "Secret code: #{@code.join(' | ')}"
+  end
+
+  # Returns [exact, partial] for a given round
+  def feedback_for_guess(round_index)
+    @feedback_board[round_index]
   end
 
   def evaluate_guess(guess)
@@ -155,11 +171,51 @@ class AISetter
 end
 
 class AIGuesser
-  def guess_combination(slots)
-    puts 'AI Guesser is Guessing a Combination'
-    Array.new(slots) { rand(1..6) }
+  def initialize(slots, options = (1..6).to_a)
+    @slots = slots
+    @options = options
+    @possible_codes = options.repeated_permutation(slots).to_a # Quickly generate every possibile Code
+    @last_guess = nil
+  end
+
+  def guess_combination(_slots)
+    @last_guess ||= @possible_codes.shuffle.sample # Take a single sample from the list of possible codes. Use that as the first guess.
+  end
+
+  def receive_feedback(exact, partial)
+    @possible_codes.select! do |code| # Select in place for each Code in our Possible_Codes
+      feedback_for(code, @last_guess) == [exact, partial] # Then Compare to our Exact/Partial results.
+      # -> I.E. Eliminate impossibilites
+    end
+
+    @last_guess = nil
+  end
+
+  # Mostly a copy of evaluate
+  def feedback_for(code, guess)
+    exact = 0
+    partial = 0
+
+    code_copy = code.dup
+    guess_copy = guess.dup
+
+    guess_copy.each_with_index do |num, idx|
+      if code_copy[idx] == num
+        exact += 1
+        code_copy[idx] = guess_copy[idx] = nil
+      end
+    end
+
+    guess_copy.compact.each do |num|
+      if code_copy.include?(num)
+        partial += 1
+        code_copy[code_copy.index(num)] = nil
+      end
+    end
+
+    [exact, partial]
   end
 end
 
-game = Game.new(rounds: 4, slots: 7)
+game = Game.new(rounds: 8, slots: 8)
 game.play_match
