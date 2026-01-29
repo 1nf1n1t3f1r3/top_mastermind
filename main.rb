@@ -9,33 +9,31 @@ class Game
     @guesser     = Guesser.new
     @max_rounds  = rounds
     @round_count = 0
+
+    @setter = choose_setter
+    @guesser = choose_guesser
   end
 
-  def test_pipeline
-    # Setup
-    @board.display_board
-    @board.display_code
-    code = @setter.set_combination # Change to allow AI
-    @board.update_combination(code)
-    @board.display_code
+  def choose_setter
+    puts 'Who should set the code? (1) Human (2) AI'
+    choice = gets.chomp
 
-    # Individual Rounds Blocked together for now
-    guess = @guesser.guess_combination # Change to allow AI
-    @board.update_guess(guess) # Add to Board
-    @board.evaluate_guess(guess)
-    @board.display_board
+    choice == '2' ? AISetter.new : HumanSetter.new
+  end
 
-    guess = @guesser.guess_combination # Change to allow AI
-    @board.update_guess(guess) # Add to Board
-    @board.evaluate_guess(guess)
-    @board.display_board
+  def choose_guesser
+    puts 'Who should guess the code? (1) Human (2) AI'
+    choice = gets.chomp
+
+    choice == '2' ? AIGuesser.new : HumanGuesser.new
   end
 
   def play_match
     # Setup
     @board.display_board
     @board.display_code
-    code = @setter.set_combination # Change to allow AI
+
+    code = @setter.set_combination(@board.slots) # Change to allow AI
     @board.update_combination(code)
     @board.display_code
 
@@ -43,7 +41,7 @@ class Game
       @round_count += 1
       puts "\nRound #{@round_count} of #{@max_rounds}"
 
-      guess = @guesser.guess_combination
+      guess = @guesser.guess_combination(@board.slots) # Change to allow AI
       @board.update_guess(guess)
       won = @board.evaluate_guess(guess)
       @board.display_board
@@ -65,6 +63,7 @@ class Board
     # Stores all guesses (8 rounds, 4 slots each)
     @board = Array.new(rounds) { Array.new(slots, 0) }
     @feedback_board = Array.new(rounds) { Array.new(2, 0) }
+    @slots = slots
 
     # Stores the secret code
     @code = Array.new(slots, 0)
@@ -130,35 +129,37 @@ class Board
     @feedback_board[@current_row - 1] = [exact_matches, partial_matches]
 
     puts "Feedback: #{exact_matches} exact, #{partial_matches} partial"
-    exact_matches == 4
+    exact_matches == @slots
   end
 end
 
-class Setter
-  def initialize
-    # Later: decide whether this is human or computer
-  end
-
-  def set_combination(slots = 4)
+class HumanSetter
+  def set_combination(slots)
     puts "Setter, enter #{slots} numbers (1–6), separated by spaces:"
     gets.chomp.split.map(&:to_i)
-
-    # For now, assume valid input
   end
 end
 
-class Guesser
-  def initialize
-    # Later: decide whether this is human or computer
-  end
-
-  def guess_combination(slots = 4)
+class HumanGuesser
+  def guess_combination(slots)
     puts "Guesser, enter #{slots} numbers (1–6), separated by spaces:"
     gets.chomp.split.map(&:to_i)
-
-    # For now, assume valid input
   end
 end
 
-game = Game.new(rounds: 4, slots: 5)
+class AISetter
+  def set_combination(slots)
+    puts 'AI Setter is Setting a Combination'
+    Array.new(slots) { rand(1..6) }
+  end
+end
+
+class AIGuesser
+  def guess_combination(slots)
+    puts 'AI Guesser is Guessing a Combination'
+    Array.new(slots) { rand(1..6) }
+  end
+end
+
+game = Game.new(rounds: 4, slots: 7)
 game.play_match
