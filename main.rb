@@ -85,14 +85,15 @@ class Board
     @current_row += 1
   end
 
-  # Display Board & Feedback
+  # Display Board & Feedback side by side
   def display_board
-    @board.each do |row|
-      puts row.join(' | ')
-    end
-
-    @feedback_board.each do |row|
-      puts row.join(' | ')
+    puts 'Guess Board | Feedback (Exact, Partial)'
+    @board.each_with_index do |row, idx|
+      feedback = @feedback_board[idx]
+      # Use padding so columns align nicely
+      guess_str = row.map { |n| n.to_s }.join(' | ')
+      feedback_str = feedback.join(' | ')
+      puts "#{guess_str}   |   #{feedback_str}"
     end
   end
 
