@@ -3,8 +3,8 @@ def r
 end
 
 class Game
-  def initialize(rounds: 8)
-    @board       = Board.new
+  def initialize(rounds: 8, slots: 4)
+    @board       = Board.new(rounds: rounds, slots: slots) # <- pass here
     @setter      = Setter.new
     @guesser     = Guesser.new
     @max_rounds  = rounds
@@ -12,12 +12,14 @@ class Game
   end
 
   def test_pipeline
+    # Setup
     @board.display_board
     @board.display_code
     code = @setter.set_combination # Change to allow AI
     @board.update_combination(code)
     @board.display_code
 
+    # Individual Rounds Blocked together for now
     guess = @guesser.guess_combination # Change to allow AI
     @board.update_guess(guess) # Add to Board
     @board.evaluate_guess(guess)
@@ -28,16 +30,44 @@ class Game
     @board.evaluate_guess(guess)
     @board.display_board
   end
+
+  def play_match
+    # Setup
+    @board.display_board
+    @board.display_code
+    code = @setter.set_combination # Change to allow AI
+    @board.update_combination(code)
+    @board.display_code
+
+    while @round_count < @max_rounds
+      @round_count += 1
+      puts "\nRound #{@round_count} of #{@max_rounds}"
+
+      guess = @guesser.guess_combination
+      @board.update_guess(guess)
+      won = @board.evaluate_guess(guess)
+      @board.display_board
+
+      if won
+        puts "Congratulations! The guesser cracked the code in #{@round_count} rounds!"
+        return
+      end
+    end
+
+    puts "Game over! The code was: #{code.join(' | ')}"
+  end
 end
 
 class Board
-  def initialize
+  attr_reader :slots
+
+  def initialize(rounds: 8, slots: 4)
     # Stores all guesses (8 rounds, 4 slots each)
-    @board = Array.new(8) { Array.new(4, 0) }
-    @feedback_board = Array.new(8) { Array.new(2, 0) }
+    @board = Array.new(rounds) { Array.new(slots, 0) }
+    @feedback_board = Array.new(rounds) { Array.new(2, 0) }
 
     # Stores the secret code
-    @code = [0, 0, 0, 0]
+    @code = Array.new(slots, 0)
 
     # Tracks which row will be filled next
     @current_row = 0
@@ -108,8 +138,8 @@ class Setter
     # Later: decide whether this is human or computer
   end
 
-  def set_combination
-    puts 'Setter, enter 4 numbers (1–6), separated by spaces:'
+  def set_combination(slots = 4)
+    puts "Setter, enter #{slots} numbers (1–6), separated by spaces:"
     gets.chomp.split.map(&:to_i)
 
     # For now, assume valid input
@@ -121,13 +151,13 @@ class Guesser
     # Later: decide whether this is human or computer
   end
 
-  def guess_combination
-    puts 'Guesser, enter 4 numbers (1–6), separated by spaces:'
+  def guess_combination(slots = 4)
+    puts "Guesser, enter #{slots} numbers (1–6), separated by spaces:"
     gets.chomp.split.map(&:to_i)
 
     # For now, assume valid input
   end
 end
 
-game = Game.new
-game.test_pipeline
+game = Game.new(rounds: 4, slots: 5)
+game.play_match
