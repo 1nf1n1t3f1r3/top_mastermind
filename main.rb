@@ -6,9 +6,17 @@ class Game
   def initialize(rounds: 8)
     @board       = Board.new
     @setter      = Setter.new
-    @guesser     = Guesser.new
+    # @guesser     = Guesser.new
     @max_rounds  = rounds
     @round_count = 0
+  end
+
+  def test_pipeline
+    @board.display_board
+    @board.display_code
+    code = @setter.set_combination
+    @board.update_combination(code)
+    @board.display_code
   end
 
   def play_match
@@ -54,62 +62,70 @@ class Game
 end
 
 class Board
-  def initialize # Empty Board and empty Code
-    @board = [
-      [0, 0, 0, 0]
-      [0, 0, 0, 0]
-      [0, 0, 0, 0]
-      [0, 0, 0, 0]
-      [0, 0, 0, 0]
-      [0, 0, 0, 0]
-      [0, 0, 0, 0]
-      [0, 0, 0, 0]
-    ]
-    @code =[0, 0, 0, 0]
-  end 
+  def initialize
+    # Stores all guesses (8 rounds, 4 slots each)
+    @board = Array.new(8) { Array.new(4, 0) }
 
-  def update_combination[array]
-        @code = array
+    # Stores the secret code
+    @code = [0, 0, 0, 0]
+
+    # Tracks which row will be filled next
+    @current_row = 0
   end
 
-def update_board[array]
-  # Updates next array with input array
-end
+  def update_combination(code)
+    @code = code
+  end
+
+  def update_board(array)
+    # Inserts the guess into the next available row
+    return if @current_row >= @board.length
+
+    @board[@current_row] = array
+    @current_row += 1
+  end
 
   def display_board
-    puts "#{@board[0, 0]} | #{@board[0, 1]} | #{@board[0, 2]} | #{@board[0, 3]}" 
-    # Etc...
-    # 
-    # Need some logic to show how many guesses were correct. Should live here somewhere, right? Not quite sure how to do it yet.
+    @board.each do |row|
+      puts row.join(' | ')
+    end
+  end
+
+  def display_code
+    puts "Secret code: #{@code.join(' | ')}"
   end
 
   def check_board
-    # if one sub-array is equal to @code
-      # win
-    # if @board !contains 0 # All spots filled
-      # Lose
-    
+    # This method will eventually:
+    # - compare guesses to @code
+    # - determine if a guess matches exactly (win)
+    # - determine if the board is full (loss)
+    #
+    # For now, this stays unimplemented
   end
 end
 
-  class Setter
-    def initialize
-      # This'd be the place where we choose Human/AI, maybe?
-    end
-
-    def set_combination[array]
-          puts "Setter, enter a 4-length Array with Numbers 1-6 to set your secret code" 
-      # Set a 4-length array using numbers 1-6
-      # Pass that to update_combination
-    end
+class Setter
+  def initialize
+    # Later: decide whether this is human or computer
   end
 
-  class Guesser
-    def initialize
-      # This'd be the place where we choose Human/AI, maybe?
-    end
+  def set_combination
+    puts 'Setter, enter 4 numbers (1–6), separated by spaces:'
+    gets.chomp.split.map(&:to_i)
 
-    def take_guess[array]
-      puts " Guesser, enter a 4-length Array with Numbers 1-6 to guess the secret code" 
-    end  
+    # For now, assume valid input
+  end
 end
+
+#   class Guesser
+#     def initialize
+#       # This'd be the place where we choose Human/AI, maybe?
+#     end
+
+#     def take_guess[array]
+#       puts " Guesser, enter a 4-length Array with Numbers 1-6 to guess the secret code"
+#     end
+
+game = Game.new
+game.test_pipeline
