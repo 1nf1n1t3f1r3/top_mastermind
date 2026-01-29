@@ -6,7 +6,7 @@ class Game
   def initialize(rounds: 8)
     @board       = Board.new
     @setter      = Setter.new
-    # @guesser     = Guesser.new
+    @guesser     = Guesser.new
     @max_rounds  = rounds
     @round_count = 0
   end
@@ -14,50 +14,19 @@ class Game
   def test_pipeline
     @board.display_board
     @board.display_code
-    code = @setter.set_combination
+    code = @setter.set_combination # Change to allow AI
     @board.update_combination(code)
     @board.display_code
-  end
 
-  def play_match
-    secret_code = @setter.set_combination
-    @board.update_combination(secret_code)
-
-    play_round until match_over?
-
-    conclude_match
-  end
-
-  private
-
-  def play_round
+    guess = @guesser.guess_combination # Change to allow AI
+    @board.update_guess(guess) # Add to Board
+    @board.evaluate_guess(guess)
     @board.display_board
 
-    guess = @guesser.take_guess
-    @board.submit_guess(guess) # record the guess
-    result = @board.check_guess(guess) # check if it's a win
-
-    @round_count += 1
-
-    if result == :win
-      @winner = :guesser
-    elsif @round_count < @max_rounds
-      puts "Round #{@round_count} complete. Continuing..."
-    end
-  end
-
-  def match_over?
-    @winner == :guesser || @round_count >= @max_rounds
-  end
-
-  def conclude_match
+    guess = @guesser.guess_combination # Change to allow AI
+    @board.update_guess(guess) # Add to Board
+    @board.evaluate_guess(guess)
     @board.display_board
-
-    if @winner == :guesser
-      puts 'Guesser wins!'
-    else
-      puts 'Setter wins!'
-    end
   end
 end
 
@@ -65,6 +34,7 @@ class Board
   def initialize
     # Stores all guesses (8 rounds, 4 slots each)
     @board = Array.new(8) { Array.new(4, 0) }
+    @feedback_board = Array.new(8) { Array.new(2, 0) }
 
     # Stores the secret code
     @code = [0, 0, 0, 0]
@@ -77,16 +47,21 @@ class Board
     @code = code
   end
 
-  def update_board(array)
-    # Inserts the guess into the next available row
+  # Inserts the guess into the next available row
+  def update_guess(guess)
     return if @current_row >= @board.length
 
-    @board[@current_row] = array
+    @board[@current_row] = guess
     @current_row += 1
   end
 
+  # Display Board & Feedback
   def display_board
     @board.each do |row|
+      puts row.join(' | ')
+    end
+
+    @feedback_board.each do |row|
       puts row.join(' | ')
     end
   end
@@ -95,13 +70,36 @@ class Board
     puts "Secret code: #{@code.join(' | ')}"
   end
 
-  def check_board
-    # This method will eventually:
-    # - compare guesses to @code
-    # - determine if a guess matches exactly (win)
-    # - determine if the board is full (loss)
-    #
-    # For now, this stays unimplemented
+  def evaluate_guess(guess)
+    exact_matches = 0
+    partial_matches = 0
+
+    # Create copies so we can mark counted numbers
+    code_copy = @code.dup
+    guess_copy = guess.dup
+
+    # First pass: check exact matches
+    guess_copy.each_with_index do |num, idx|
+      next unless code_copy[idx] == num
+
+      exact_matches += 1
+      # Mark as counted
+      code_copy[idx] = guess_copy[idx] = nil
+    end
+
+    # Second pass: check partial matches (number exists but in wrong spot)
+    guess_copy.compact.each do |num|
+      if code_copy.include?(num)
+        partial_matches += 1
+        code_copy[code_copy.index(num)] = nil # remove counted number
+      end
+    end
+
+    # Store feedback in @feedback_board
+    @feedback_board[@current_row - 1] = [exact_matches, partial_matches]
+
+    puts "Feedback: #{exact_matches} exact, #{partial_matches} partial"
+    exact_matches == 4
   end
 end
 
@@ -118,14 +116,18 @@ class Setter
   end
 end
 
-#   class Guesser
-#     def initialize
-#       # This'd be the place where we choose Human/AI, maybe?
-#     end
+class Guesser
+  def initialize
+    # Later: decide whether this is human or computer
+  end
 
-#     def take_guess[array]
-#       puts " Guesser, enter a 4-length Array with Numbers 1-6 to guess the secret code"
-#     end
+  def guess_combination
+    puts 'Guesser, enter 4 numbers (1–6), separated by spaces:'
+    gets.chomp.split.map(&:to_i)
+
+    # For now, assume valid input
+  end
+end
 
 game = Game.new
 game.test_pipeline
